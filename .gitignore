@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+.env
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# OS
+.DS_Store
