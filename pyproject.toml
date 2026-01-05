@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "py-vault"
+version = "0.1.0"
+description = "A zero-knowledge CLI password manager with anti-automation defenses."
+readme = "README.md"
+authors = [{ name = "davideciaccio", email = "dciaccio48@gmail.com" }]
+license = { text = "MIT" }
+requires-python = ">=3.8"
+dependencies = [
+    "cryptography>=41.0.7",
+    "argon2-cffi>=23.1.0",
+    "click>=8.1.7",
+    "rich>=13.7.0",
+    "questionary>=2.0.1",
+    "pyperclip>=1.8.2",
+]
+
+[project.scripts]
+pyvault = "src.main:cli"
+
+[tool.black]
+line-length = 88
+target-version = ['py38']

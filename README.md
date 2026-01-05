@@ -10,7 +10,7 @@
 
 * **Zero-Knowledge Architecture**: Your master password and salt never leave your local machine.
 * **Military-Grade Encryption**: Powered by **AES-256-GCM** for authenticated encryption and **Argon2id** for robust key derivation.
-* **Active Defense**: 
+* **Active Defense**:
     * **Anti-HID Injection**: Real-time typing speed analysis to block automated hardware attacks.
     * **Random Challenges**: Interactive verification steps to disrupt pre-programmed scripts.
 * **Cross-Platform**: Seamlessly runs on Linux, macOS, and Windows.
@@ -36,7 +36,7 @@ Py-Vault doesn't just hide your data; it makes it mathematically inaccessible.
 ### 🐧 Linux & 🍎 macOS
 1. **Clone the repository**:
    ```bash
-   git clone [https://github.com/your-username/py-vault.git](https://github.com/your-username/py-vault.git)
+   git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
    cd py-vault
 Run the installer:
 
@@ -51,7 +51,7 @@ Clone the repository:
 
 PowerShell
 
-git clone [https://github.com/your-username/py-vault.git](https://github.com/your-username/py-vault.git)
+git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
 cd py-vault
 Run the installer (Run PowerShell as Admin):
 
@@ -67,30 +67,30 @@ Create your secure database and set your Master Password.
 
 Bash
 
-vault init
+pyvault init
 Store Credentials
 Add a new service. You can provide your own password or generate a secure one.
 
 Bash
 
 # Manual entry
-vault add github
+pyvault add github
 
 # Auto-generate a 32-character secure password
-vault add google --gen --length 32
+pyvault add google --gen --length 32
 Retrieve Passwords
 To protect against screen-scrapers, passwords are sent to the clipboard and cleared automatically.
 
 Bash
 
 # Copy to clipboard for 30 seconds
-vault get github --copy
+pyvault get github --copy
 Security Audit
 Analyze your vault for vulnerabilities like weak or reused passwords.
 
 Bash
 
-vault audit
+pyvault audit
 🛡️ Anti-Automation Protection
 Unlike standard password managers, Py-Vault monitors the entropy of input timing.
 
@@ -104,4 +104,4 @@ Distributed under the MIT License. See LICENSE for more information.
 ⚠️ Disclaimer
 This tool is provided "as is" for educational and personal use. While it implements industry-standard cryptographic practices, always ensure your Master Password is long, unique, and securely stored.
 
-Created with passion by [Your Name]
+Created with passion by davideciaccio

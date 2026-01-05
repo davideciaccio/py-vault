@@ -28,10 +28,8 @@ This document tracks the development progress of the Py-Vault password manager. 
 - [ ] **Install Scripts**: Finalize `install.sh` (Linux/macOS) and `install.ps1` (Windows).
 
 ## Phase 5: Maintenance & Repository Security
-- [ ] **Dependency Management**: Create `requirements.txt` and `requirements-dev.txt`.
-- [ ] **Modern Packaging**: Configure `pyproject.toml` (PEP 517 compliance).
-- [ ] **Pre-commit Hooks**: Setup hooks to prevent accidental commits of `.db` or `.env` files.
+- [x] **Dependency Management**: Create `requirements.txt` and `requirements-dev.txt`.
+- [x] **Modern Packaging**: Configure `pyproject.toml` (PEP 517 compliance).
+- [x] **Pre-commit Hooks**: Setup hooks to prevent accidental commits of `.db` or `.env` files.
 - [ ] **Automated Updates**: Configure GitHub Dependabot for automated security patching.
 - [ ] **CI Pipeline**: Setup GitHub Actions for automated testing on every PR.
-
-

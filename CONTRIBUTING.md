@@ -4,26 +4,12 @@ First of all, thank you for showing interest in contributing to **Py-Vault**! Pr
 
 By participating in this project, you agree to abide by its terms and professional standards.
 
----
-
-## 🔒 Security Vulnerabilities (Critical)
-
-**Please do NOT open a public issue for security vulnerabilities.**
-
-If you discover a potential security bug or a flaw in the cryptographic implementation, please report it responsibly by:
-1. Sending a detailed email to: `your-email@example.com` (Replace this with your actual contact)
-2. Providing a PoC (Proof of Concept) if possible.
-
-We will acknowledge your report and work on a fix as a priority.
-
----
-
 ## 🛠️ Development Workflow
 
 ### 1. Fork and Clone
 Fork the repository on GitHub and clone it to your local machine:
 ```bash
-git clone [https://github.com/your-username/py-vault.git](https://github.com/your-username/py-vault.git)
+git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
 cd py-vault
 2. Environment Setup
 Always use a Virtual Environment to keep dependencies isolated:
@@ -75,9 +61,7 @@ fix: for bug fixes.
 
 docs: for documentation changes.
 
-refactor: for code changes that neither fix a bug nor add a feature.
-
-Example: feat: add AES-GCM tag validation to storage module
+refactor: for code changes that neither fix a bug or add a feature.
 
 🚀 Submission Process
 Push your changes to your fork.
