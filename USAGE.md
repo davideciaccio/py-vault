@@ -1,0 +1,51 @@
+# PyVault Usage Guide
+
+This guide covers the basic commands to get started with **PyVault**, your secure CLI credential manager.
+
+---
+
+## 1. Initialize the Vault (init)
+
+Before storing any credentials, you must initialize your vault. This process sets up the local database and your **Master Password**.
+
+> **Warning**: Do not lose your Master Password. It is the only key to decrypt your data; there is no "recovery" or "reset" option.
+
+pyvault init
+
+What happens:
+- Creates the vault.db file in your project directory.
+- Prompts you to set a Master Password.
+- Generates a unique salt and a cryptographic verifier to secure the vault.
+
+
+## 2. Adding Credentials (add)
+The add command is used to store new service credentials. You will always be prompted for your Master Password to authorize the operation.
+
+- Case A: Manual Password Entry
+
+ Use this if you already have a password for a service and want to store it securely.
+
+ pyvault add spotify --username mario.rossi
+
+ Flow:
+ Enter your Master Password.
+ Enter the Spotify password when prompted.
+ The credentials are encrypted and saved.
+
+- Case B: Auto-Generate a Secure Password
+
+ Use the --gen flag to let PyVault create a strong, random password for you.
+
+ pyvault add github --username dev_user --gen
+
+ Flow:Enter your Master Password.
+ PyVault generates a 20-character random password (default).
+ The password is displayed once and saved securely.
+
+- Case C: Custom Length Generated Password
+
+ If a service requires a specific password length, use the --length option.
+
+ pyvault add bank_account --username user123 --gen --length 32
+
+ Result: Generates and saves a 32-character high-entropy password.
