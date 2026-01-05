@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,7 +20,11 @@ dependencies = [
 ]
 
 [project.scripts]
-pyvault = "src.main:cli"
+pyvault = "pyvault.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyvault*"]
 
 [tool.black]
 line-length = 88

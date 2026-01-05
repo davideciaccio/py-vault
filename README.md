@@ -1,8 +1,6 @@
-# Py-Vault 🛡️
+# 🛡️ Py-Vault
 
 **Py-Vault** is a professional-grade, zero-knowledge CLI password manager built with Python. It is designed for users who prioritize extreme privacy and require defense against modern attack vectors, including HID injection (Rubber Ducky) and automated keylogging.
-
-
 
 ---
 
@@ -13,8 +11,8 @@
 * **Active Defense**:
     * **Anti-HID Injection**: Real-time typing speed analysis to block automated hardware attacks.
     * **Random Challenges**: Interactive verification steps to disrupt pre-programmed scripts.
+* **Professional CLI**: Built with `click` and `rich` for a beautiful, intuitive, and colored terminal experience.
 * **Cross-Platform**: Seamlessly runs on Linux, macOS, and Windows.
-* **Developer-Friendly**: Built with `click` and `rich` for a beautiful, intuitive CLI experience.
 
 ---
 
@@ -25,83 +23,111 @@ Py-Vault doesn't just hide your data; it makes it mathematically inaccessible.
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
 | **KDF** | Argon2id | Protects against brute-force and GPU-accelerated attacks. |
-| **Encryption** | AES-256-GCM | Ensures data confidentiality and integrity (tamper-proof). |
-| **Storage** | Encrypted SQLite | Provides ACID-compliant, high-performance local storage. |
-| **Input** | Hidden Echo | Prevents "shoulder surfing" by masking all sensitive inputs. |
+| **Encryption** | AES-256-GCM | Ensures data confidentiality and tamper-proof integrity. |
+| **Storage** | Encrypted SQLite | ACID-compliant, high-performance local storage. |
+| **Layout** | **Src-Layout** | Ensures clean dependency management and secure module isolation. |
+
+
 
 ---
 
-## 📦 Installation
+## 📦 Installation Guide
+
+To avoid path conflicts and ensure all security modules are correctly resolved, Py-Vault must be installed in **editable mode** within a virtual environment.
 
 ### 🐧 Linux & 🍎 macOS
-1. **Clone the repository**:
-   ```bash
-   git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
-   cd py-vault
-Run the installer:
 
-Bash
+1.  **Clone the repository**:
+    ```bash
+    git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
+    cd py-vault
+    ```
 
-chmod +x install.sh
-./install.sh
-Restart your terminal and type vault.
+2.  **Create and activate a virtual environment**:
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-🪟 Windows
-Clone the repository:
+3.  **Install the package**:
+    The `-e` (editable) flag is **mandatory** to register the `pyvault` command and resolve internal module paths correctly:
+    ```bash
+    pip install -e .
+    ```
 
-PowerShell
+4.  **Verify the installation**:
+    ```bash
+    pyvault --version
+    ```
 
-git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
-cd py-vault
-Run the installer (Run PowerShell as Admin):
+### 🪟 Windows
 
-PowerShell
+1.  **Clone the repository**:
+    ```powershell
+    git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
+    cd py-vault
+    ```
 
-Set-ExecutionPolicy Bypass -Scope Process -Force
-.\install.ps1
-💻 Usage
-Py-Vault uses an intuitive command structure. Below are the primary actions:
+2.  **Setup Environment**:
+    ```powershell
+    python -m venv venv
+    .\venv\Scripts\activate
+    ```
 
-Initialize the Vault
+3.  **Install**:
+    ```powershell
+    pip install -e .
+    ```
+
+---
+
+## 💻 Usage
+
+Py-Vault uses an intuitive command structure. Always ensure your **virtual environment is active** before running commands.
+
+### 1. Initialize the Vault
 Create your secure database and set your Master Password.
-
-Bash
-
+```bash
 pyvault init
-Store Credentials
-Add a new service. You can provide your own password or generate a secure one.
+
+----
+
+2. Store Credentials
+Add a new service manually or let the tool generate a secure password for you.
 
 Bash
 
 # Manual entry
-pyvault add github
+pyvault add github --username myuser
 
 # Auto-generate a 32-character secure password
-pyvault add google --gen --length 32
-Retrieve Passwords
-To protect against screen-scrapers, passwords are sent to the clipboard and cleared automatically.
+pyvault add google --username myuser --gen --length 32
+
+---
+
+3. Retrieve Passwords (WIP)
+Retrieve and copy passwords to your clipboard safely.
 
 Bash
 
-# Copy to clipboard for 30 seconds
 pyvault get github --copy
-Security Audit
-Analyze your vault for vulnerabilities like weak or reused passwords.
-
-Bash
-
-pyvault audit
 🛡️ Anti-Automation Protection
-Unlike standard password managers, Py-Vault monitors the entropy of input timing.
+Py-Vault monitors the entropy of input timing to distinguish between humans and machines:
 
-Human Verification: If a sequence of characters is entered with a delay of less than 50ms per keystroke (standard for Rubber Ducky devices), access is immediately revoked.
+Speed Threshold: If the Master Password is typed in less than 50ms/char (standard for Rubber Ducky devices), access is immediately denied.
 
 Interactive Confirmation: Critical operations require the user to type a randomized character displayed on the screen, breaking automated HID scripts.
+
+---
 
 📄 License
 Distributed under the MIT License. See LICENSE for more information.
 
+---
+
 ⚠️ Disclaimer
-This tool is provided "as is" for educational and personal use. While it implements industry-standard cryptographic practices, always ensure your Master Password is long, unique, and securely stored.
+This tool is provided "as is" for educational and personal use. While it implements industry-standard cryptographic practices, the security of your data ultimately depends on the strength and secrecy of your Master Password.
+
+---
 
 Created with passion by davideciaccio

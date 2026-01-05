@@ -3,11 +3,11 @@
 This document tracks the development progress of the Py-Vault password manager. Each phase is designed to ensure maximum security and a professional developer experience.
 
 ## Phase 1: Security Foundation (Core)
-- [ ] **KDF Implementation**: Configure Argon2id for robust Master Password key derivation.
-- [ ] **Encryption Engine**: Implement AES-256-GCM for authenticated encryption at rest.
-- [ ] **Anti-Automation**: Implement typing speed monitoring logic (Anti-Rubber Ducky).
-- [ ] **Random Challenge**: Interactive human-verification system using random characters.
-- [ ] **Secure Storage**: Implement the encrypted SQLite database logic (`src/storage.py`).
+- [x] **KDF Implementation**: Configure Argon2id for robust Master Password key derivation.
+- [x] **Encryption Engine**: Implement AES-256-GCM for authenticated encryption at rest.
+- [x] **Anti-Automation**: Implement typing speed monitoring logic (Anti-Rubber Ducky).
+- [x] **Random Challenge**: Interactive human-verification system using random characters.
+- [x] **Secure Storage**: Implement the encrypted SQLite database logic (`src/storage.py`).
 
 ## Phase 2: CLI & UX Development
 - [ ] **CLI Structure**: Build command hierarchy with `click` (init, add, get, list, audit).
