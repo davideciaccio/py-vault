@@ -356,5 +356,76 @@ def list():
         console.print(f"[bold red]Developer Error:[/bold red] {e}")
 
 
+@cli.command(cls=OrderedUsageCommand)
+@click.argument("service")
+def rm(service):
+    """Delete a stored service from the vault."""
+    db_path = "vault.db"
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+
+    if not os.path.exists(db_path):
+        console.print(
+            Panel(
+                "[bold red]Error:[/bold red] Vault not initialized.", border_style="red"
+            )
+        )
+        return
+
+    # 1. Identity Verification (Input speed check)
+    start_time = time.time()
+    master_pwd = questionary.password(
+        "Enter your Master Password to authorize deletion:"
+    ).ask()
+
+    if not master_pwd or not SecurityProtections.check_input_speed(
+        master_pwd, start_time
+    ):
+        return
+
+    # --- GUARDIA: Verifica della Master Password ---
+    try:
+        salt = storage.get_master_salt()
+        verifier_blob = storage.get_verifier()
+        key = crypto.derive_key(master_pwd, salt)
+        crypto.decrypt(verifier_blob, key)
+    except Exception:
+        console.print(
+            Panel(
+                "[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.",
+                border_style="red",
+            )
+        )
+        return
+
+    # --- LOGICA DI RIMOZIONE ---
+    # Check if the service actually exists
+    credential = storage.get_credential(service)
+    if not credential:
+        console.print(
+            f"\n[bold yellow]Service '{service}' not found in the vault.[/bold yellow]"
+        )
+        return
+
+    # Interactive Confirmation
+    confirm = questionary.confirm(
+        f"Are you sure you want to PERMANENTLY delete '{service}'?"
+    ).ask()
+
+    if confirm:
+        try:
+            storage.delete_credential(service)
+            console.print(
+                Panel(
+                    f"[bold green]✔ Success:[/bold green] Service '[bold cyan]{service}[/bold cyan]' has been removed.",
+                    border_style="green",
+                )
+            )
+        except Exception as e:
+            console.print(f"[bold red]Error during deletion:[/bold red] {e}")
+    else:
+        console.print("[yellow]Deletion cancelled.[/yellow]")
+
+
 if __name__ == "__main__":
     cli()

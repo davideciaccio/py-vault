@@ -86,7 +86,7 @@ The add command is used to store new service credentials. You will always be pro
 
 ---
 
- ### 4. Listing Stored Services (list)
+### 4. Listing Stored Services (list)
 
  The list command provides an organized overview of all services currently stored in your vault. This is useful for auditing your accounts without exposing sensitive passwords.
 
@@ -105,3 +105,25 @@ The add command is used to store new service credentials. You will always be pro
 
 
 (![pyvault list -> table](images/pyvault_list_commad.png))
+
+---
+
+### 5. Removing Credentials (rm)
+ The rm command allows you to permanently delete a service and its credentials from the vault. This action is irreversible.
+
+ ```bash
+ pyvault rm SERVICE
+ ```
+ - Workflow:
+
+    - Authorization: You must enter your Master Password.
+
+    - Verification: The system checks if the service exists.
+
+    - Confirmation: You will be asked "Are you sure?". You must explicitly confirm (Y/n) to proceed.
+
+ - Example:
+
+ ```bash
+ pyvault rm old_bank_account
+ ```
