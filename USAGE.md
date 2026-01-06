@@ -4,6 +4,8 @@ This guide covers the basic commands to get started with **PyVault**, your secur
 
 ---
 
+type ```pyvault ``` or ```pyvault --help ``` to see the main tool functions.
+
 ### 1. Initialize the Vault (init)
 
 Before storing any credentials, you must initialize your vault. This process sets up the local database and your **Master Password**.

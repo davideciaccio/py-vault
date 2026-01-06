@@ -17,6 +17,25 @@ from pyvault.protections import SecurityProtections
 console = Console()
 
 
+# Custom class to change the group help usage order to: COMMAND [OPTIONS]
+class OrderedUsageGroup(click.Group):
+    def format_usage(self, ctx, formatter):
+        # Collect default usage pieces (e.g., ['[OPTIONS]', 'COMMAND [ARGS]...'])
+        pieces = self.collect_usage_pieces(ctx)
+
+        # 1. Remove '[ARGS]...' from any piece that contains it
+        pieces = [p.replace(" [ARGS]...", "") for p in pieces]
+
+        # If there are at least two pieces, swap them to show COMMAND first
+        if len(pieces) >= 2:
+            # Typical pieces for a group: ['[OPTIONS]', 'COMMAND [ARGS]...']
+            opts = pieces.pop(0)
+            pieces.insert(1, opts)
+
+        # Write the modified usage line: pyvault COMMAND [ARGS]... [OPTIONS]
+        formatter.write_usage(ctx.command_path, " ".join(pieces))
+
+
 class OrderedUsageCommand(click.Command):
     def format_usage(self, ctx, formatter):
         # Collect default usage pieces (e.g., ['[OPTIONS]', 'SERVICE'])
@@ -48,7 +67,7 @@ def show_banner():
     )
 
 
-@click.group(invoke_without_command=True)
+@click.group(cls=OrderedUsageGroup, invoke_without_command=True)
 @click.version_option(version="0.1.0-alpha", prog_name="Py-Vault")
 @click.pass_context
 def cli(ctx):
