@@ -10,13 +10,16 @@ Before storing any credentials, you must initialize your vault. This process set
 
 > **Warning**: Do not lose your Master Password. It is the only key to decrypt your data; there is no "recovery" or "reset" option.
 
+```bash
 pyvault init
+```
 
 What happens:
 - Creates the vault.db file in your project directory.
 - Prompts you to set a Master Password.
 - Generates a unique salt and a cryptographic verifier to secure the vault.
 
+---
 
 ## 2. Adding Credentials (add)
 The add command is used to store new service credentials. You will always be prompted for your Master Password to authorize the operation.
@@ -25,7 +28,9 @@ The add command is used to store new service credentials. You will always be pro
 
  Use this if you already have a password for a service and want to store it securely.
 
+ ```bash
  pyvault add spotify --username mario.rossi
+ ```
 
  Flow:
  Enter your Master Password.
@@ -36,7 +41,9 @@ The add command is used to store new service credentials. You will always be pro
 
  Use the --gen flag to let PyVault create a strong, random password for you.
 
+ ```bash
  pyvault add github --username dev_user --gen
+ ```
 
  Flow:Enter your Master Password.
  PyVault generates a 20-character random password (default).
@@ -46,6 +53,8 @@ The add command is used to store new service credentials. You will always be pro
 
  If a service requires a specific password length, use the --length option.
 
+ ```bash
  pyvault add bank_account --username user123 --gen --length 32
+ ```
 
  Result: Generates and saves a 32-character high-entropy password.
