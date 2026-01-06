@@ -8,6 +8,8 @@ class VaultStorage:
     def __init__(self, db_path="vault.db"):
         self.db_path = db_path
         self._initialize_db()
+        self.conn = sqlite3.connect(self.db_path)
+        self._create_table()
 
     @contextmanager
     def _connect(self):
@@ -44,6 +46,18 @@ class VaultStorage:
                 )
             """
             )
+
+    def _create_table(self):
+        """Internal method to ensure the table exists."""
+        query = """
+        CREATE TABLE IF NOT EXISTS credentials (
+            service TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
+            password_blob BLOB NOT NULL
+        )
+        """
+        self.conn.execute(query)
+        self.conn.commit()
 
     # --- Master Data Management (Used during init and authentication) ---
 
@@ -99,3 +113,11 @@ class VaultStorage:
                 "SELECT service, username FROM credentials ORDER BY service ASC"
             )
             return cursor.fetchall()
+
+    def get_all_credentials(self):
+        """Retrieve all stored services and their associated usernames."""
+        query = "SELECT service, username FROM credentials ORDER BY service ASC"
+        cursor = self.conn.cursor()
+        cursor.execute(query)
+        # Returns a list of tuples: [('github', 'mario'), ('google', 'mario.rossi')]
+        return cursor.fetchall()
