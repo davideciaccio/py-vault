@@ -15,6 +15,22 @@ from pyvault.protections import SecurityProtections
 console = Console()
 
 
+class OrderedUsageCommand(click.Command):
+    def format_usage(self, ctx, formatter):
+        # Collect default usage pieces (e.g., ['[OPTIONS]', 'SERVICE'])
+        pieces = self.collect_usage_pieces(ctx)
+
+        # If there are at least two pieces (options and arguments), swap them
+        if len(pieces) >= 2:
+            # Remove the last element (the SERVICE argument)
+            arg = pieces.pop()
+            # Insert it at the beginning of the list
+            pieces.insert(0, arg)
+
+        # Write the modified usage line to the help output
+        formatter.write_usage(ctx.command_path, " ".join(pieces))
+
+
 def show_banner():
     """Displays a professional ASCII banner."""
     banner = """
@@ -104,7 +120,9 @@ def init():
         console.print(f"[bold red]Critical Error during initialization:[/bold red] {e}")
 
 
-@cli.command()
+@cli.command(
+    cls=OrderedUsageCommand
+)  # Apply the orderUsageCommand class to the command
 @click.argument("service")
 @click.option(
     "--username", prompt="Username for the service", help="The username to store."
