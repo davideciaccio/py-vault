@@ -6,6 +6,7 @@ import questionary
 import click
 import pyperclip
 import threading
+from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
 
@@ -282,6 +283,77 @@ def get(service, copy):
         console.print(
             f"\n[bold red]Error:[/bold red] Could not decrypt the credential. Data might be corrupted. Details: {e}"
         )
+
+
+@cli.command(cls=OrderedUsageCommand)
+def list():
+    """List all stored services in the vault."""
+    db_path = "vault.db"
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+
+    if not os.path.exists(db_path):
+        console.print(
+            Panel(
+                "[bold red]Error:[/bold red] Vault not initialized.", border_style="red"
+            )
+        )
+        return
+
+    # 1. Identity Verification
+    start_time = time.time()
+    master_pwd = questionary.password("Enter your Master Password:").ask()
+
+    if not master_pwd or not SecurityProtections.check_input_speed(
+        master_pwd, start_time
+    ):
+        return
+
+    # --- GUARDIA: Verifica SOLO la Master Password ---
+    try:
+        salt = storage.get_master_salt()
+        verifier_blob = storage.get_verifier()
+        key = crypto.derive_key(master_pwd, salt)
+        crypto.decrypt(verifier_blob, key)
+    except Exception:
+        console.print(
+            Panel(
+                "[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.",
+                border_style="red",
+            )
+        )
+        return
+
+    # --- SE SIAMO QUI, LA PASSWORD È CORRETTA ---
+    # Ora eseguiamo il resto fuori dal try della password per vedere i veri errori
+    try:
+        credentials = storage.get_all_credentials()
+
+        if not credentials:
+            console.print(
+                Panel("[yellow]The vault is currently empty.[/yellow]", title="Info")
+            )
+            return
+
+        table = Table(
+            title="Stored Credentials", border_style="blue", header_style="bold magenta"
+        )
+        table.add_column("Service", style="cyan", no_wrap=True)
+        table.add_column("Username", style="green")
+
+        for cred in credentials:
+            # Se ricevi un errore qui, vedrai "tuple indices..." e non Access Denied
+            table.add_row(str(cred[0]), str(cred[1]))
+
+        console.print("\n")
+        console.print(table)
+        console.print(
+            f"\n[italic white]Total: {len(credentials)} services found.[/italic white]"
+        )
+
+    except Exception as e:
+        # Questo catturerà eventuali bug nel codice di visualizzazione
+        console.print(f"[bold red]Developer Error:[/bold red] {e}")
 
 
 if __name__ == "__main__":

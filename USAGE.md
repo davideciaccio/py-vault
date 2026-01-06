@@ -83,3 +83,25 @@ The add command is used to store new service credentials. You will always be pro
  ```
 
  Security Note: When using --copy, PyVault starts a background process that automatically clears your clipboard after 30 seconds to prevent accidental exposure.
+
+---
+
+ ### 4. Listing Stored Services (list)
+
+ The list command provides an organized overview of all services currently stored in your vault. This is useful for auditing your accounts without exposing sensitive passwords.
+
+ ```bash
+  pyvault list
+  ```
+ - Details:
+
+   - Authentication: Requires your Master Password to access the database metadata.
+
+   - Security: For your protection, this command never displays passwords. It only shows service names and usernames.
+
+ - UI: Displays a professionally formatted table using the rich library, including a security banner.
+
+ Example Output: After successful authentication, you will see a table like this:
+
+
+![alt text](<Screenshot 2026-01-06 173100.png>)
