@@ -39,7 +39,7 @@ To avoid path conflicts and ensure all security modules are correctly resolved, 
 
 1.  **Clone the repository**:
     ```bash
-    git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
+    git clone https://github.com/davideciaccio/py-vault.git
     cd py-vault
     ```
 
@@ -60,11 +60,11 @@ To avoid path conflicts and ensure all security modules are correctly resolved, 
     pyvault --version
     ```
 
-### 🪟 Windows
+### 🪟 Windows - powershell
 
 1.  **Clone the repository**:
     ```powershell
-    git clone [https://github.com/davideciaccio/py-vault.git](https://github.com/davideciaccio/py-vault.git)
+    git clone https://github.com/davideciaccio/py-vault.git
     cd py-vault
     ```
 
@@ -78,45 +78,6 @@ To avoid path conflicts and ensure all security modules are correctly resolved, 
     ```powershell
     pip install -e .
     ```
-
----
-
-## 💻 Usage
-
-Py-Vault uses an intuitive command structure. Always ensure your **virtual environment is active** before running commands.
-
-### 1. Initialize the Vault
-Create your secure database and set your Master Password.
-```bash
-pyvault init
-
-----
-
-2. Store Credentials
-Add a new service manually or let the tool generate a secure password for you.
-
-Bash
-
-# Manual entry
-pyvault add github --username myuser
-
-# Auto-generate a 32-character secure password
-pyvault add google --username myuser --gen --length 32
-
----
-
-3. Retrieve Passwords (WIP)
-Retrieve and copy passwords to your clipboard safely.
-
-Bash
-
-pyvault get github --copy
-🛡️ Anti-Automation Protection
-Py-Vault monitors the entropy of input timing to distinguish between humans and machines:
-
-Speed Threshold: If the Master Password is typed in less than 50ms/char (standard for Rubber Ducky devices), access is immediately denied.
-
-Interactive Confirmation: Critical operations require the user to type a randomized character displayed on the screen, breaking automated HID scripts.
 
 ---
 
