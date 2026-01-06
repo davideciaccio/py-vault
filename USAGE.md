@@ -4,7 +4,7 @@ This guide covers the basic commands to get started with **PyVault**, your secur
 
 ---
 
-## 1. Initialize the Vault (init)
+### 1. Initialize the Vault (init)
 
 Before storing any credentials, you must initialize your vault. This process sets up the local database and your **Master Password**.
 
@@ -21,7 +21,7 @@ What happens:
 
 ---
 
-## 2. Adding Credentials (add)
+### 2. Adding Credentials (add)
 The add command is used to store new service credentials. You will always be prompted for your Master Password to authorize the operation.
 
 - Case A: Manual Password Entry
@@ -58,3 +58,26 @@ The add command is used to store new service credentials. You will always be pro
  ```
 
  Result: Generates and saves a 32-character high-entropy password.
+
+---
+
+### 3. Retrieving Credentials (get)
+ The get command retrieves and decrypts your stored secrets. For security, the decryption happens only in memory.
+
+- Case A: View in Terminal
+
+ This displays your username and password directly in the console.
+
+ ```bash
+ pyvault get google
+ ```
+
+- Case B: Copy to Clipboard
+
+ Use the --copy flag to send the password to your clipboard without displaying it on screen.
+
+ ```bash
+ pyvault get google --copy
+ ```
+
+ Security Note: When using --copy, PyVault starts a background process that automatically clears your clipboard after 30 seconds to prevent accidental exposure.

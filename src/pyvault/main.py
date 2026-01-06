@@ -4,6 +4,8 @@ import secrets
 import string
 import questionary
 import click
+import pyperclip
+import threading
 from rich.console import Console
 from rich.panel import Panel
 
@@ -174,6 +176,92 @@ def add(service, username, gen, length):
         storage.add_credential(service, username, encrypted_blob)
         console.print(
             f"\n[bold green]✔[/bold green] Credentials for [bold cyan]{service}[/bold cyan] saved successfully!"
+        )
+
+
+# Helper function to clear the clipboard after a delay
+def delayed_clipboard_clear(delay):
+    """Wait for 'delay' seconds and then clear the clipboard content."""
+    time.sleep(delay)
+    pyperclip.copy("")
+
+
+@cli.command(cls=OrderedUsageCommand)
+@click.argument("service")
+@click.option("--copy", is_flag=True, help="Copy the password to the clipboard.")
+def get(service, copy):
+    """Retrieve and decrypt credentials for a specific service."""
+    db_path = "vault.db"
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+
+    if not os.path.exists(db_path):
+        console.print(
+            "[bold red]Error:[/bold red] Vault not initialized. Run 'pyvault init' first."
+        )
+        return
+
+    # 1. Identity Verification
+    start_time = time.time()
+    master_pwd = questionary.password("Enter your Master Password:").ask()
+
+    if not master_pwd or not SecurityProtections.check_input_speed(
+        master_pwd, start_time
+    ):
+        return
+
+    try:
+        # 2. Verify Master Password (The "Guard")
+        salt = storage.get_master_salt()
+        verifier_blob = storage.get_verifier()
+        key = crypto.derive_key(master_pwd, salt)
+        # Verify the key against the stored verifier
+        crypto.decrypt(verifier_blob, key)
+    except Exception:
+        # If decryption of the verifier fails, the password is definitely wrong
+        console.print("\n[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.")
+        return
+
+    # --- IF WE ARE HERE, THE MASTER PASSWORD IS CORRECT ---
+
+    # 3. Retrieve the encrypted credential from DB
+    credential = storage.get_credential(service)
+    if not credential:
+        console.print(
+            f"\n[bold yellow]No credentials found for service:[/bold yellow] {service}"
+        )
+        return
+
+    try:
+        # 4. Decryption of the specific secret
+        # Se storage.get_credential restituisce una tupla (es: ('mario', b'blob'))
+        # L'indice [0] è lo username, l'indice [1] è la password_blob
+        username = credential[0]
+        password_blob = credential[1]
+
+        decrypted_password = crypto.decrypt(password_blob, key)
+
+        # 5. Output Management
+        if copy:
+            pyperclip.copy(decrypted_password)
+            console.print(
+                f"\n[bold green]✔[/bold green] Password for [bold cyan]{service}[/bold cyan] copied to clipboard!"
+            )
+            console.print(
+                "[italic white]Note: Clipboard will be cleared in 30 seconds.[/italic white]"
+            )
+            threading.Thread(
+                target=delayed_clipboard_clear, args=(30,), daemon=True
+            ).start()
+        else:
+            console.print(f"\n[bold green]Credentials for {service}:[/bold green]")
+            console.print(f"Username: [bold cyan]{username}[/bold cyan]")
+            console.print(f"Password: [bold red]{decrypted_password}[/bold red]")
+
+    except Exception as e:
+        # If this fails, it's a data issue, not a password issue
+        console.print(
+            f"\n[bold red]Error:[/bold red] Could not decrypt the credential. Data might be corrupted. Details: {e}"
         )
 
 
