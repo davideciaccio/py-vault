@@ -104,4 +104,4 @@ The add command is used to store new service credentials. You will always be pro
  Example Output: After successful authentication, you will see a table like this:
 
 
-![alt text](<Screenshot 2026-01-06 173100.png>)
+(![pyvault list -> table](images/pyvault_list_commad.png))
