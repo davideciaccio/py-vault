@@ -59,6 +59,12 @@ class VaultStorage:
         self.conn.execute(query)
         self.conn.commit()
 
+    def delete_credential(self, service):
+        """Permanently remove a service from the database."""
+        query = "DELETE FROM credentials WHERE service = ?"
+        self.conn.execute(query, (service,))
+        self.conn.commit()
+
     # --- Master Data Management (Used during init and authentication) ---
 
     def store_master_data(self, salt: bytes, verifier_blob: bytes):
