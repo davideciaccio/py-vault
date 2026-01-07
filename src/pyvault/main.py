@@ -498,5 +498,81 @@ def audit():
         console.print(f"[bold red]Audit Error:[/bold red] {e}")
 
 
+@cli.command(cls=OrderedUsageCommand)
+def wipe():
+    """PERMANENTLY destroy the vault and all stored data."""
+    db_path = "vault.db"
+
+    if not os.path.exists(db_path):
+        console.print(
+            Panel(
+                "[bold yellow]No vault found to wipe.[/bold yellow]",
+                border_style="yellow",
+            )
+        )
+        return
+
+    show_banner()
+    console.print(
+        Panel(
+            "[bold red]⚠ CRITICAL WARNING:[/bold red]\n"
+            "You are about to PERMANENTLY DELETE the entire vault.\n"
+            "This action cannot be undone and all passwords will be lost forever.",
+            title="[bold red]EMERGENCY WIPE",
+            border_style="red",
+        )
+    )
+
+    # 1. First Confirmation
+    if not questionary.confirm("Are you absolutely sure you want to proceed?").ask():
+        console.print("[green]Wipe aborted. Your data is safe.[/green]")
+        return
+
+    # 2. Security Challenge (Master Password)
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+
+    start_time = time.time()
+    master_pwd = questionary.password(
+        "Enter Master Password to authorize DESTRUCTION:"
+    ).ask()
+
+    if not master_pwd or not SecurityProtections.check_input_speed(
+        master_pwd, start_time
+    ):
+        return
+
+    # --- GUARDIA: Verifica della Master Password ---
+    try:
+        salt = storage.get_master_salt()
+        verifier_blob = storage.get_verifier()
+        key = crypto.derive_key(master_pwd, salt)
+        crypto.decrypt(verifier_blob, key)
+    except Exception:
+        print_security_error(
+            "Authorization failed. Wipe cancelled for security reasons."
+        )
+        return
+
+    # 3. Final Random Challenge (Human check)
+    if not SecurityProtections.random_confirmation_challenge(length=6):
+        return
+
+    # 4. Destruction
+    try:
+        # Chiudiamo eventuali connessioni attive se necessario (sqlite3 lo gestisce, ma rm è brutale)
+        os.remove(db_path)
+        console.print("\n")
+        console.print(
+            Panel(
+                "[bold green]✔ Vault successfully destroyed.[/bold green]\n"
+                "All local data has been removed from this system.",
+                border_style="white",
+            )
+        )
+    except Exception as e:
+        console.print(f"[bold red]Error during destruction:[/bold red] {e}")
+
+
 if __name__ == "__main__":
     cli()
