@@ -3,13 +3,13 @@ from contextlib import contextmanager
 
 
 class VaultStorage:
-    """Handles all database interactions for PyVault with integrity checks."""
+    """Handles all database interactions for PyVault with a unified schema."""
 
     def __init__(self, db_path="vault.db"):
         self.db_path = db_path
         self._initialize_db()
+        # Manteniamo self.conn per compatibilità con i vecchi comandi che non usano ancora _connect
         self.conn = sqlite3.connect(self.db_path)
-        self._create_table()
 
     @contextmanager
     def _connect(self):
@@ -22,10 +22,9 @@ class VaultStorage:
             conn.close()
 
     def _initialize_db(self):
-        """Creates the necessary tables for configuration and credentials."""
+        """Creates the necessary tables with the unified schema."""
         with self._connect() as conn:
-            # Table for system configuration (Salt and Master Verifier)
-            # We use a single row (id=1) to ensure global configuration
+            # Tabella di configurazione
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS config (
@@ -36,39 +35,21 @@ class VaultStorage:
             """
             )
 
-            # Credentials table
+            # Tabella credenziali - Standard: password_blob
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS credentials (
                     service TEXT PRIMARY KEY,
                     username TEXT NOT NULL,
-                    encrypted_data BLOB NOT NULL
+                    password_blob BLOB NOT NULL
                 )
             """
             )
 
-    def _create_table(self):
-        """Internal method to ensure the table exists."""
-        query = """
-        CREATE TABLE IF NOT EXISTS credentials (
-            service TEXT PRIMARY KEY,
-            username TEXT NOT NULL,
-            password_blob BLOB NOT NULL
-        )
-        """
-        self.conn.execute(query)
-        self.conn.commit()
-
-    def delete_credential(self, service):
-        """Permanently remove a service from the database."""
-        query = "DELETE FROM credentials WHERE service = ?"
-        self.conn.execute(query, (service,))
-        self.conn.commit()
-
-    # --- Master Data Management (Used during init and authentication) ---
+    # --- Master Data Management (Richiesti da 'init' e 'audit') ---
 
     def store_master_data(self, salt: bytes, verifier_blob: bytes):
-        """Stores the salt and the encrypted canary (verifier) in one atomic operation."""
+        """Stores the salt and verifier."""
         with self._connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO config (id, master_salt, master_verifier) VALUES (1, ?, ?)",
@@ -76,7 +57,7 @@ class VaultStorage:
             )
 
     def get_master_salt(self) -> bytes:
-        """Retrieves the master salt for key derivation."""
+        """Retrieves the master salt."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT master_salt FROM config WHERE id = 1")
@@ -84,7 +65,7 @@ class VaultStorage:
             return result[0] if result else None
 
     def get_verifier(self) -> bytes:
-        """Retrieves the encrypted verifier (canary) for password validation."""
+        """Retrieves the verifier blob."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT master_verifier FROM config WHERE id = 1")
@@ -93,26 +74,26 @@ class VaultStorage:
 
     # --- Credential Management ---
 
-    def add_credential(self, service: str, username: str, encrypted_blob: bytes):
+    def add_credential(self, service: str, username: str, password_blob: bytes):
         """Stores or updates an encrypted credential."""
         with self._connect() as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO credentials (service, username, encrypted_data) VALUES (?, ?, ?)",
-                (service, username, encrypted_blob),
+                "INSERT OR REPLACE INTO credentials (service, username, password_blob) VALUES (?, ?, ?)",
+                (service, username, password_blob),
             )
 
     def get_credential(self, service: str):
-        """Fetches the credential for a specific service."""
+        """Fetches a specific credential."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT username, encrypted_data FROM credentials WHERE service = ?",
+                "SELECT username, password_blob FROM credentials WHERE service = ?",
                 (service,),
             )
-            return cursor.fetchone()  # Returns (username, blob) or None
+            return cursor.fetchone()
 
-    def list_all_services(self):
-        """Returns a list of all stored services (without passwords)."""
+    def get_all_credentials(self):
+        """Used by the 'list' command."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -120,10 +101,14 @@ class VaultStorage:
             )
             return cursor.fetchall()
 
-    def get_all_credentials(self):
-        """Retrieve all stored services and their associated usernames."""
-        query = "SELECT service, username FROM credentials ORDER BY service ASC"
-        cursor = self.conn.cursor()
-        cursor.execute(query)
-        # Returns a list of tuples: [('github', 'mario'), ('google', 'mario.rossi')]
-        return cursor.fetchall()
+    def get_full_inventory(self):
+        """Used by the 'audit' command."""
+        with self._connect() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT service, username, password_blob FROM credentials")
+            return cursor.fetchall()
+
+    def delete_credential(self, service: str):
+        """Used by the 'rm' command."""
+        with self._connect() as conn:
+            conn.execute("DELETE FROM credentials WHERE service = ?", (service,))
