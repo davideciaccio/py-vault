@@ -143,3 +143,53 @@ pyvault audit
     * High-risk vulnerabilities that need immediate action.
     * Reuse warnings for better organization.
     * Confirmation of excellent password hygiene.
+
+---
+
+## 7. Emergency Vault Wipe (wipe)
+The **wipe** command acts as a "panic button" for your security. It is designed to instantaneously and permanently destroy the local database file (`vault.db`).
+
+```bash
+pyvault wipe
+```
+
+### ⚠ Irreversible Action
+This operation is **final**. Once the vault is wiped, all stored credentials, salts, and metadata are physically deleted from the disk and cannot be recovered by any means.
+
+### Protection Layers:
+To prevent accidental data loss, the command requires passing through three distinct security layers:
+1.  **Explicit Confirmation**: A preliminary "Are you sure?" prompt.
+2.  **Identity Verification**: You must enter your Master Password to authorize the destruction.
+3.  **Human Verification**: A 6-character dynamic alphanumeric challenge (e.g., `XJ92L1`) must be solved to confirm the action.
+
+---
+
+## 8. Migration and Backup (Import/Export)
+These commands allow you to move your data safely between different platforms or create local backups.
+
+### 8.1 Formatting External Data (`formatter`)
+If you are migrating from **Chrome**, **Edge**, or **Bitwarden**, you must first format your raw CSV file into a PyVault-compatible structure.
+
+**Command:**
+`pyvault formatter FILE_PATH DEST_PATH NEW_FILE_NAME`
+
+> **Note:** You can use shortcuts like `~/Downloads` for the paths.
+> **Warning:** If your file names or paths contain **spaces**, you must wrap the path in quotes (e.g., `"~/Downloads/My Passwords.csv"`) or rename the file without spaces to avoid recognition issues.
+
+### 8.2 Importing Data (`import`)
+Once you have a PyVault-formatted CSV, you can load it into your vault. Duplicate services will be skipped automatically.
+
+**Command:**
+`pyvault import FILE_PATH`
+
+### 8.3 Exporting Your Vault (`export`)
+Extracts your credentials, decrypts them, and saves them to a file.
+
+**Command:**
+`pyvault export DEST_PATH NEW_FILE_NAME [OPTIONS]`
+
+**Options:**
+* `--format [csv|json]`: Choose output format (Default: CSV).
+
+> [!CAUTION]
+> **SECURITY WARNING:** Exported files are stored in **PLAIN TEXT**. Ensure the destination path (e.g., `~/Documents/Backups`) is secure and delete the file immediately after use.
