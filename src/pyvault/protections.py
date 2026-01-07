@@ -1,6 +1,7 @@
 import time
 import random
 import string
+import questionary
 from rich.console import Console
 
 console = Console()
@@ -31,19 +32,22 @@ class SecurityProtections:
         return True
 
     @staticmethod
-    def random_confirmation_challenge() -> bool:
-        """
-        Forces the user to solve a simple random challenge.
-        """
-        char = random.choice(string.ascii_uppercase)
-        console.print(
-            f"\n[bold yellow]SECURITY CHECK:[/bold yellow] Type the letter [bold cyan]{char}[/bold cyan] to confirm: ",
-            end="",
+    def random_confirmation_challenge(length=5):
+        """Generates a random alphanumeric challenge to prevent automated scripts."""
+        # Genera una stringa casuale di lettere maiuscole e numeri
+        challenge = "".join(
+            random.choices(string.ascii_uppercase + string.digits, k=length)
         )
 
-        user_input = input().strip().upper()
+        response = questionary.text(
+            f"Security Check: Type '{challenge}' to confirm you are human:",
+            instruction=" (Case sensitive)",
+        ).ask()
 
-        if user_input != char:
-            console.print("[bold red]Verification failed. Action aborted.[/bold red]")
+        if response == challenge:
+            return True
+        else:
+            console.print(
+                "[bold red]Verification failed.[/bold red] Challenge string did not match."
+            )
             return False
-        return True

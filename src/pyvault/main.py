@@ -17,40 +17,21 @@ from pyvault.protections import SecurityProtections
 
 console = Console()
 
-
-# Custom class to change the group help usage order to: COMMAND [OPTIONS]
-class OrderedUsageGroup(click.Group):
-    def format_usage(self, ctx, formatter):
-        # Collect default usage pieces (e.g., ['[OPTIONS]', 'COMMAND [ARGS]...'])
-        pieces = self.collect_usage_pieces(ctx)
-
-        # 1. Remove '[ARGS]...' from any piece that contains it
-        pieces = [p.replace(" [ARGS]...", "") for p in pieces]
-
-        # If there are at least two pieces, swap them to show COMMAND first
-        if len(pieces) >= 2:
-            # Typical pieces for a group: ['[OPTIONS]', 'COMMAND [ARGS]...']
-            opts = pieces.pop(0)
-            pieces.insert(1, opts)
-
-        # Write the modified usage line: pyvault COMMAND [ARGS]... [OPTIONS]
-        formatter.write_usage(ctx.command_path, " ".join(pieces))
+# --- UI UTILITIES ---
 
 
-class OrderedUsageCommand(click.Command):
-    def format_usage(self, ctx, formatter):
-        # Collect default usage pieces (e.g., ['[OPTIONS]', 'SERVICE'])
-        pieces = self.collect_usage_pieces(ctx)
-
-        # If there are at least two pieces (options and arguments), swap them
-        if len(pieces) >= 2:
-            # Remove the last element (the SERVICE argument)
-            arg = pieces.pop()
-            # Insert it at the beginning of the list
-            pieces.insert(0, arg)
-
-        # Write the modified usage line to the help output
-        formatter.write_usage(ctx.command_path, " ".join(pieces))
+def print_security_error(message="Invalid Master Password. Authorization failed."):
+    """Standardized security error message for failed authentication."""
+    console.print("\n")
+    console.print(
+        Panel(
+            f"[bold red]ACCESS DENIED[/bold red]\n{message}",
+            border_style="red",
+            expand=False,
+            title="[bold red]Security Notification",
+            padding=(1, 2),
+        )
+    )
 
 
 def show_banner():
@@ -68,6 +49,31 @@ def show_banner():
     )
 
 
+# --- CLICK CUSTOMIZATIONS ---
+
+
+class OrderedUsageGroup(click.Group):
+    def format_usage(self, ctx, formatter):
+        pieces = self.collect_usage_pieces(ctx)
+        pieces = [p.replace(" [ARGS]...", "") for p in pieces]
+        if len(pieces) >= 2:
+            opts = pieces.pop(0)
+            pieces.insert(1, opts)
+        formatter.write_usage(ctx.command_path, " ".join(pieces))
+
+
+class OrderedUsageCommand(click.Command):
+    def format_usage(self, ctx, formatter):
+        pieces = self.collect_usage_pieces(ctx)
+        if len(pieces) >= 2:
+            arg = pieces.pop()
+            pieces.insert(0, arg)
+        formatter.write_usage(ctx.command_path, " ".join(pieces))
+
+
+# --- CLI CORE ---
+
+
 @click.group(cls=OrderedUsageGroup, invoke_without_command=True)
 @click.version_option(version="0.1.0-alpha", prog_name="Py-Vault")
 @click.pass_context
@@ -83,30 +89,59 @@ def init():
     """Initialize the secure vault and set the Master Password."""
     db_path = "vault.db"
     storage = VaultStorage(db_path)
-    crypto = CryptoManager()  # Inizializziamo il gestore crittografico
+    crypto = CryptoManager()
 
-    # 1. Check if vault already exists
     if os.path.exists(db_path) and storage.get_master_salt():
-        console.print("[bold red]Error:[/bold red] Vault already initialized.")
+        console.print(
+            Panel(
+                "[bold red]Error:[/bold red] Vault already initialized.",
+                border_style="red",
+                expand=False,
+            )
+        )
         return
 
     show_banner()
     console.print("[bold cyan]Starting Vault Initialization...[/bold cyan]\n")
 
-    # 2. Master Password Input
+    # 1. Primo inserimento (Nascosto)
     start_time = time.time()
-    master_pwd = questionary.password(
+    master_pwd_first = questionary.password(
         "Set your Master Password:", instruction=" (Choose a strong, unique password)"
     ).ask()
 
-    if not master_pwd:
+    if not master_pwd_first:
         console.print("[red]Password cannot be empty.[/red]")
         return
 
-    # 3. Security Protections (Typing Speed & Challenge)
+    # 2. Conferma (Nascosto)
+    master_pwd_confirm = questionary.password(
+        "Confirm your Master Password:", instruction=" (Must match exactly)"
+    ).ask()
+
+    if master_pwd_first != master_pwd_confirm:
+        console.print(
+            Panel(
+                "[bold red]Error:[/bold red] Passwords do not match. Initialization aborted.",
+                border_style="red",
+                expand=False,
+            )
+        )
+        # Rimuoviamo il file database se è stato creato per errore
+        if os.path.exists(db_path):
+            os.remove(db_path)
+        return
+
+    master_pwd = master_pwd_first
+
+    # 3. Security Protections (Velocità e Sfida Casuale)
     if not SecurityProtections.check_input_speed(master_pwd, start_time):
+        if os.path.exists(db_path):
+            os.remove(db_path)
         return
     if not SecurityProtections.random_confirmation_challenge():
+        if os.path.exists(db_path):
+            os.remove(db_path)
         return
 
     # 4. Cryptographic Setup
@@ -115,36 +150,25 @@ def init():
     )
 
     try:
-        # A. Generiamo il Salt
         salt = os.urandom(16)
-
-        # B. Deriviamo la Master Key dalla password (KDF Argon2id)
-        # Questa chiave servirà per cifrare il verificatore
         key = crypto.derive_key(master_pwd, salt)
-
-        # C. Creiamo il VERIFIER (Canary)
-        # Cifriamo una stringa fissa: se in futuro riusciremo a decifrarla,
-        # la Master Password inserita sarà corretta.
         verifier_blob = crypto.encrypt("PYVAULT_VERIFIER", key)
-
-        # D. Salvataggio atomico nel nuovo database
-        # Il nuovo storage.py gestisce la creazione tabelle nel suo __init__
         storage.store_master_data(salt, verifier_blob)
 
         console.print(
-            "[bold green]Success![/bold green] Your vault has been initialized."
+            Panel(
+                "[bold green]Success![/bold green] Your vault has been initialized.",
+                border_style="green",
+                expand=False,
+            )
         )
-        console.print(
-            "[dim]A unique master salt and verifier have been stored in vault.db.[/dim]"
-        )
-
     except Exception as e:
         console.print(f"[bold red]Critical Error during initialization:[/bold red] {e}")
+        if os.path.exists(db_path):
+            os.remove(db_path)
 
 
-@cli.command(
-    cls=OrderedUsageCommand
-)  # Apply the orderUsageCommand class to the command
+@cli.command(cls=OrderedUsageCommand)
 @click.argument("service")
 @click.option(
     "--username", prompt="Username for the service", help="The username to store."
@@ -159,11 +183,14 @@ def add(service, username, gen, length):
 
     if not os.path.exists(db_path):
         console.print(
-            "[bold red]Error:[/bold red] Vault not initialized. Run 'pyvault init' first."
+            Panel(
+                "[bold red]Error:[/bold red] Vault not initialized. Run 'pyvault init' first.",
+                border_style="red",
+                expand=False,
+            )
         )
         return
 
-    # 1. Input Master Password con analisi della velocità (Anti-Ducky)
     start_time = time.time()
     master_pwd = questionary.password("Enter your Master Password:").ask()
 
@@ -173,24 +200,21 @@ def add(service, username, gen, length):
         return
 
     try:
-        # 2. Derivazione della chiave sessione
         salt = storage.get_master_salt()
         verifier_blob = storage.get_verifier()
         key = crypto.derive_key(master_pwd, salt)
         crypto.decrypt(verifier_blob, key)
-
     except Exception:
-        console.print("\n[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.")
+        print_security_error()
         return
 
-    # 3. Gestione Password: Generazione o Input manuale
     if gen:
         alphabet = string.ascii_letters + string.digits + string.punctuation
         target_password = "".join(secrets.choice(alphabet) for _ in range(length))
         console.print(f"[bold green]Generated password:[/bold green] {target_password}")
     else:
         target_password = questionary.password(f"Enter password for {service}:").ask()
-    # 4. Cifratura e Salvataggio
+
     if target_password:
         encrypted_blob = crypto.encrypt(target_password, key)
         storage.add_credential(service, username, encrypted_blob)
@@ -199,7 +223,6 @@ def add(service, username, gen, length):
         )
 
 
-# Helper function to clear the clipboard after a delay
 def delayed_clipboard_clear(delay):
     """Wait for 'delay' seconds and then clear the clipboard content."""
     time.sleep(delay)
@@ -217,11 +240,14 @@ def get(service, copy):
 
     if not os.path.exists(db_path):
         console.print(
-            "[bold red]Error:[/bold red] Vault not initialized. Run 'pyvault init' first."
+            Panel(
+                "[bold red]Error:[/bold red] Vault not initialized.",
+                border_style="red",
+                expand=False,
+            )
         )
         return
 
-    # 1. Identity Verification
     start_time = time.time()
     master_pwd = questionary.password("Enter your Master Password:").ask()
 
@@ -231,20 +257,14 @@ def get(service, copy):
         return
 
     try:
-        # 2. Verify Master Password (The "Guard")
         salt = storage.get_master_salt()
         verifier_blob = storage.get_verifier()
         key = crypto.derive_key(master_pwd, salt)
-        # Verify the key against the stored verifier
         crypto.decrypt(verifier_blob, key)
     except Exception:
-        # If decryption of the verifier fails, the password is definitely wrong
-        console.print("\n[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.")
+        print_security_error()
         return
 
-    # --- IF WE ARE HERE, THE MASTER PASSWORD IS CORRECT ---
-
-    # 3. Retrieve the encrypted credential from DB
     credential = storage.get_credential(service)
     if not credential:
         console.print(
@@ -253,22 +273,14 @@ def get(service, copy):
         return
 
     try:
-        # 4. Decryption of the specific secret
-        # Se storage.get_credential restituisce una tupla (es: ('mario', b'blob'))
-        # L'indice [0] è lo username, l'indice [1] è la password_blob
         username = credential[0]
         password_blob = credential[1]
-
         decrypted_password = crypto.decrypt(password_blob, key)
 
-        # 5. Output Management
         if copy:
             pyperclip.copy(decrypted_password)
             console.print(
-                f"\n[bold green]✔[/bold green] Password for [bold cyan]{service}[/bold cyan] copied to clipboard!"
-            )
-            console.print(
-                "[italic white]Note: Clipboard will be cleared in 30 seconds.[/italic white]"
+                f"\n[bold green]✔[/bold green] Password for [bold cyan]{service}[/bold cyan] copied to clipboard for 30s!"
             )
             threading.Thread(
                 target=delayed_clipboard_clear, args=(30,), daemon=True
@@ -277,11 +289,9 @@ def get(service, copy):
             console.print(f"\n[bold green]Credentials for {service}:[/bold green]")
             console.print(f"Username: [bold cyan]{username}[/bold cyan]")
             console.print(f"Password: [bold red]{decrypted_password}[/bold red]")
-
     except Exception as e:
-        # If this fails, it's a data issue, not a password issue
         console.print(
-            f"\n[bold red]Error:[/bold red] Could not decrypt the credential. Data might be corrupted. Details: {e}"
+            f"\n[bold red]Error:[/bold red] Could not decrypt the credential. Details: {e}"
         )
 
 
@@ -295,12 +305,13 @@ def list():
     if not os.path.exists(db_path):
         console.print(
             Panel(
-                "[bold red]Error:[/bold red] Vault not initialized.", border_style="red"
+                "[bold red]Error:[/bold red] Vault not initialized.",
+                border_style="red",
+                expand=False,
             )
         )
         return
 
-    # 1. Identity Verification
     start_time = time.time()
     master_pwd = questionary.password("Enter your Master Password:").ask()
 
@@ -309,29 +320,24 @@ def list():
     ):
         return
 
-    # --- GUARDIA: Verifica SOLO la Master Password ---
     try:
         salt = storage.get_master_salt()
         verifier_blob = storage.get_verifier()
         key = crypto.derive_key(master_pwd, salt)
         crypto.decrypt(verifier_blob, key)
     except Exception:
-        console.print(
-            Panel(
-                "[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.",
-                border_style="red",
-            )
-        )
+        print_security_error()
         return
 
-    # --- SE SIAMO QUI, LA PASSWORD È CORRETTA ---
-    # Ora eseguiamo il resto fuori dal try della password per vedere i veri errori
     try:
         credentials = storage.get_all_credentials()
-
         if not credentials:
             console.print(
-                Panel("[yellow]The vault is currently empty.[/yellow]", title="Info")
+                Panel(
+                    "[yellow]The vault is currently empty.[/yellow]",
+                    title="Info",
+                    expand=False,
+                )
             )
             return
 
@@ -342,17 +348,11 @@ def list():
         table.add_column("Username", style="green")
 
         for cred in credentials:
-            # Se ricevi un errore qui, vedrai "tuple indices..." e non Access Denied
             table.add_row(str(cred[0]), str(cred[1]))
 
         console.print("\n")
         console.print(table)
-        console.print(
-            f"\n[italic white]Total: {len(credentials)} services found.[/italic white]"
-        )
-
     except Exception as e:
-        # Questo catturerà eventuali bug nel codice di visualizzazione
         console.print(f"[bold red]Developer Error:[/bold red] {e}")
 
 
@@ -367,64 +367,135 @@ def rm(service):
     if not os.path.exists(db_path):
         console.print(
             Panel(
-                "[bold red]Error:[/bold red] Vault not initialized.", border_style="red"
+                "[bold red]Error:[/bold red] Vault not initialized.",
+                border_style="red",
+                expand=False,
             )
         )
         return
 
-    # 1. Identity Verification (Input speed check)
     start_time = time.time()
-    master_pwd = questionary.password(
-        "Enter your Master Password to authorize deletion:"
-    ).ask()
+    master_pwd = questionary.password("Enter your Master Password:").ask()
 
     if not master_pwd or not SecurityProtections.check_input_speed(
         master_pwd, start_time
     ):
         return
 
-    # --- GUARDIA: Verifica della Master Password ---
     try:
         salt = storage.get_master_salt()
         verifier_blob = storage.get_verifier()
         key = crypto.derive_key(master_pwd, salt)
         crypto.decrypt(verifier_blob, key)
     except Exception:
-        console.print(
-            Panel(
-                "[bold red]ACCESS DENIED:[/bold red] Invalid Master Password.",
-                border_style="red",
-            )
-        )
+        print_security_error()
         return
 
-    # --- LOGICA DI RIMOZIONE ---
-    # Check if the service actually exists
     credential = storage.get_credential(service)
     if not credential:
-        console.print(
-            f"\n[bold yellow]Service '{service}' not found in the vault.[/bold yellow]"
-        )
+        console.print(f"\n[bold yellow]Service '{service}' not found.[/bold yellow]")
         return
 
-    # Interactive Confirmation
-    confirm = questionary.confirm(
+    if questionary.confirm(
         f"Are you sure you want to PERMANENTLY delete '{service}'?"
-    ).ask()
-
-    if confirm:
+    ).ask():
         try:
             storage.delete_credential(service)
             console.print(
                 Panel(
-                    f"[bold green]✔ Success:[/bold green] Service '[bold cyan]{service}[/bold cyan]' has been removed.",
+                    f"[bold green]✔ Success:[/bold green] '{service}' has been removed.",
                     border_style="green",
+                    expand=False,
                 )
             )
         except Exception as e:
             console.print(f"[bold red]Error during deletion:[/bold red] {e}")
-    else:
-        console.print("[yellow]Deletion cancelled.[/yellow]")
+
+
+@cli.command(cls=OrderedUsageCommand)
+def audit():
+    """Scan the vault for weak or reused passwords."""
+    db_path = "vault.db"
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+
+    if not os.path.exists(db_path):
+        console.print(
+            Panel(
+                "[bold red]Error:[/bold red] Vault not initialized.",
+                border_style="red",
+                expand=False,
+            )
+        )
+        return
+
+    start_time = time.time()
+    master_pwd = questionary.password("Enter Master Password:").ask()
+
+    if not master_pwd or not SecurityProtections.check_input_speed(
+        master_pwd, start_time
+    ):
+        return
+
+    try:
+        salt = storage.get_master_salt()
+        verifier_blob = storage.get_verifier()
+        key = crypto.derive_key(master_pwd, salt)
+        crypto.decrypt(verifier_blob, key)
+    except Exception:
+        print_security_error()
+        return
+
+    try:
+        items = storage.get_full_inventory()
+        if not items:
+            console.print("[yellow]Vault is empty. Nothing to audit.[/yellow]")
+            return
+
+        total_count = len(items)
+        weak_passwords = []
+        passwords_map = {}
+
+        with console.status("[bold green]Analyzing credentials..."):
+            for service, username, blob in items:
+                raw_pwd = crypto.decrypt(blob, key)
+                if len(raw_pwd) < 12:
+                    weak_passwords.append(service)
+                if raw_pwd not in passwords_map:
+                    passwords_map[raw_pwd] = []
+                passwords_map[raw_pwd].append(service)
+
+        reused_groups = {
+            pwd: svcs for pwd, svcs in passwords_map.items() if len(svcs) > 1
+        }
+
+        console.print(
+            Panel(
+                f"[bold]Security Audit Report[/bold]\nTotal Credentials Scanned: {total_count}",
+                expand=False,
+            )
+        )
+
+        if weak_passwords:
+            weak_table = Table(title="Weak Passwords (Length < 12)", border_style="red")
+            weak_table.add_column("Service", style="bold red")
+            for s in weak_passwords:
+                weak_table.add_row(s)
+            console.print(weak_table)
+        else:
+            console.print("[bold green]✔ No weak passwords found.[/bold green]")
+
+        if reused_groups:
+            reuse_table = Table(title="Password Reuse Detected", border_style="yellow")
+            reuse_table.add_column("Reused Services", style="bold yellow")
+            for svcs in reused_groups.values():
+                reuse_table.add_row(", ".join(svcs))
+            console.print(reuse_table)
+        else:
+            console.print("[bold green]✔ No password reuse detected.[/bold green]")
+
+    except Exception as e:
+        console.print(f"[bold red]Audit Error:[/bold red] {e}")
 
 
 if __name__ == "__main__":

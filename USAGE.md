@@ -127,3 +127,19 @@ The add command is used to store new service credentials. You will always be pro
  ```bash
  pyvault rm old_bank_account
  ```
+---
+
+## 6. Security Audit (audit)
+The audit command is a professional-grade tool designed to analyze your password hygiene without ever compromising your secrets. It identifies potential vulnerabilities in your vault using a "Zero-Knowledge" approach.
+
+```bash
+pyvault audit
+```
+
+### Key Analysis Features:
+* **Password Reuse Detection**: Identifies if the same password is used for multiple services, preventing "credential stuffing" attacks.
+* **Strength Analysis**: Flags any password shorter than **12 characters** as high risk.
+* **Visual Reporting**: Generates a color-coded security report:
+    * High-risk vulnerabilities that need immediate action.
+    * Reuse warnings for better organization.
+    * Confirmation of excellent password hygiene.

@@ -10,13 +10,13 @@ This document tracks the development progress of the Py-Vault password manager. 
 - [x] **Secure Storage**: Implement the encrypted SQLite database logic (`src/storage.py`).
 
 ## Phase 2: CLI & UX Development
-- [ ] **CLI Structure**: Build command hierarchy with `click` (init, add, get, list, audit).
-- [ ] **Banner & UI**: Integrate `rich` for ASCII banners, panels, and styled tables.
+- [x] **CLI Structure**: Build command hierarchy with `click` (init, add, get, list, audit).
+- [x] **Banner & UI**: Integrate `rich` for ASCII banners, panels, and styled tables.
 - [X] **Password Gen**: Cryptographically secure password generator with customizable parameters.
 - [X] **Clipboard Management**: Secure copy system with an auto-clear timer (e.g., 30s).
 
 ## Phase 3: Advanced Features & Audit
-- [ ] **Security Audit**: Logic to scan the vault for weak or reused passwords.
+- [x] **Security Audit**: Logic to scan the vault for weak or reused passwords.
 - [ ] **Import/Export**: Encrypted backup functionality and secure CSV import (with warnings).
 - [ ] **Vault Wipe**: Emergency command for instantaneous and secure local data destruction.
 
