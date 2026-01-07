@@ -17,8 +17,8 @@ This document tracks the development progress of the Py-Vault password manager. 
 
 ## Phase 3: Advanced Features & Audit
 - [x] **Security Audit**: Logic to scan the vault for weak or reused passwords.
-- [ ] **Import/Export**: Encrypted backup functionality and secure CSV import (with warnings).
-- [ ] **Vault Wipe**: Emergency command for instantaneous and secure local data destruction.
+- [x] **Import/Export**: Encrypted backup functionality and secure CSV import (with warnings).
+- [x] **Vault Wipe**: Emergency command for instantaneous and secure local data destruction.
 
 ## Phase 4: Distribution & Documentation
 - [x] **Project Structure**: Created `src/`, `tests/` folders and initialized Git repository.

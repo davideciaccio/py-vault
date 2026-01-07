@@ -6,6 +6,8 @@ import questionary
 import click
 import pyperclip
 import threading
+import json
+import csv
 from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
@@ -68,6 +70,18 @@ class OrderedUsageCommand(click.Command):
         if len(pieces) >= 2:
             arg = pieces.pop()
             pieces.insert(0, arg)
+        formatter.write_usage(ctx.command_path, " ".join(pieces))
+
+
+class MultiArgUsageCommand(click.Command):
+    """Specific usage formatter for commands with multiple arguments (e.g., formatter, export)."""
+
+    def format_usage(self, ctx, formatter):
+        pieces = self.collect_usage_pieces(ctx)
+        # We ensure [OPTIONS] always goes at the very end
+        if "[OPTIONS]" in pieces:
+            pieces.remove("[OPTIONS]")
+            pieces.append("[OPTIONS]")
         formatter.write_usage(ctx.command_path, " ".join(pieces))
 
 
@@ -572,6 +586,235 @@ def wipe():
         )
     except Exception as e:
         console.print(f"[bold red]Error during destruction:[/bold red] {e}")
+
+
+# --- EXPORT COMMAND ---
+@cli.command(cls=MultiArgUsageCommand)
+@click.argument("dest_path", type=click.Path())
+@click.argument("new_file_name")
+@click.option(
+    "--format", type=click.Choice(["json", "csv"]), default="csv", help="Export format."
+)
+def export(dest_path, new_file_name, format):
+    """
+    Extract, decrypt, and save vault data to a specific path.
+    Note: You can use '~/Desktop' or similar paths for the destination.
+    """
+    db_path = "vault.db"
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+
+    # Ensure automatic extension
+    extension = f".{format}"
+    clean_name = (
+        new_file_name
+        if new_file_name.endswith(extension)
+        else f"{new_file_name}{extension}"
+    )
+    full_output_path = os.path.abspath(
+        os.path.expanduser(os.path.join(dest_path, clean_name))
+    )
+
+    # 1. Identity Verification
+    start_time = time.time()
+    master_pwd = questionary.password(
+        "Enter Master Password to authorize export:"
+    ).ask()
+    if not master_pwd or not SecurityProtections.check_input_speed(
+        master_pwd, start_time
+    ):
+        return
+
+    try:
+        salt = storage.get_master_salt()
+        key = crypto.derive_key(master_pwd, salt)
+        crypto.decrypt(storage.get_verifier(), key)
+    except Exception:
+        print_security_error()
+        return
+
+    # 2. Security Warning
+    console.print(
+        Panel(
+            "[bold red]DANGER:[/bold red] You are exporting your passwords in PLAIN TEXT.\n"
+            "Ensure the destination folder is secure. Note: Paths like [cyan]~/Desktop[/cyan] are supported.",
+            border_style="red",
+            expand=False,
+        )
+    )
+    if not questionary.confirm(
+        "Do you really want to proceed with an unencrypted export?"
+    ).ask():
+        return
+
+    # 3. Fetch and Decrypt
+    raw_data = storage.get_full_inventory()
+    decrypted_list = []
+
+    for service, username, blob in raw_data:
+        decrypted_list.append(
+            {
+                "service": service,
+                "username": username,
+                "password": crypto.decrypt(blob, key),
+            }
+        )
+
+    # 4. File Writing
+    try:
+        os.makedirs(os.path.dirname(full_output_path), exist_ok=True)
+        if format == "json":
+            with open(full_output_path, "w", encoding="utf-8") as f:
+                json.dump(decrypted_list, f, indent=4)
+        else:
+            with open(full_output_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(
+                    f, fieldnames=["service", "username", "password"]
+                )
+                writer.writeheader()
+                writer.writerows(decrypted_list)
+
+        console.print(
+            f"[bold green]✔ Export successful:[/bold green] [cyan]{full_output_path}[/cyan]"
+        )
+    except Exception as e:
+        console.print(f"[bold red]Export failed:[/bold red] {e}")
+
+
+# --- FORMATTER COMMAND ---
+@cli.command(cls=MultiArgUsageCommand)
+@click.argument("file_path", type=click.Path(exists=True))
+@click.argument("dest_path", type=click.Path())
+@click.argument("new_file_name")
+def formatter(file_path, dest_path, new_file_name):
+    """
+    Convert external CSVs to PyVault format.\n
+    Note: You can use '~/Downloads' or similar paths.\n
+    WARNING: If file names or paths contain spaces, ensure you wrap them in quotes or rename them without spaces to avoid path recognition issues.
+    """
+    src_path = os.path.abspath(os.path.expanduser(file_path))
+    final_dest_dir = os.path.abspath(os.path.expanduser(dest_path))
+    final_file_path = os.path.join(final_dest_dir, new_file_name)
+
+    known_mappings = [
+        {
+            "service": "name",
+            "username": "login_username",
+            "password": "login_password",
+        },  # Bitwarden
+        {
+            "service": "name",
+            "username": "username",
+            "password": "password",
+        },  # Chrome/Edge
+        {"service": "url", "username": "username", "password": "password"},  # Generic
+    ]
+
+    try:
+        with open(src_path, mode="r", encoding="utf-8-sig") as infile:
+            reader = csv.DictReader(infile)
+            headers = reader.fieldnames
+
+            active_mapping = None
+            if headers:
+                for m in known_mappings:
+                    if all(val in headers for val in m.values()):
+                        active_mapping = m
+                        break
+
+            if not active_mapping:
+                console.print(
+                    "[bold red]❌ Impossible to format CSV:[/bold red] unsupported format or missing headers."
+                )
+                return
+
+            os.makedirs(final_dest_dir, exist_ok=True)
+            with open(
+                final_file_path, mode="w", newline="", encoding="utf-8"
+            ) as outfile:
+                writer = csv.DictWriter(
+                    outfile, fieldnames=["service", "username", "password"]
+                )
+                writer.writeheader()
+                for row in reader:
+                    writer.writerow(
+                        {
+                            "service": row[active_mapping["service"]],
+                            "username": row[active_mapping["username"]],
+                            "password": row[active_mapping["password"]],
+                        }
+                    )
+
+        console.print(
+            Panel(
+                f"[bold green]✔ Formatting successful![/bold green]\n"
+                f"📂 File ready: [cyan]{final_file_path}[/cyan]",
+                border_style="green",
+                expand=False,
+            )
+        )
+    except Exception as e:
+        console.print(f"[bold red]❌ Conversion error:[/bold red] {e}")
+
+
+# --- IMPORT COMMAND ---
+@cli.command(name="import", cls=OrderedUsageCommand)
+@click.argument("file_path", type=click.Path(exists=True))
+def import_cmd(file_path):
+    """
+    Import data from a formatted CSV and encrypt it into the vault.
+    Note: Supports paths like '~/Downloads/ready.csv'.
+    """
+    db_path = "vault.db"
+    storage = VaultStorage(db_path)
+    crypto = CryptoManager()
+    full_path = os.path.abspath(os.path.expanduser(file_path))
+
+    # 1. Identity Verification
+    master_pwd = questionary.password(
+        "Enter Master Password to authorize import:"
+    ).ask()
+    try:
+        salt = storage.get_master_salt()
+        key = crypto.derive_key(master_pwd, salt)
+        crypto.decrypt(storage.get_verifier(), key)
+    except Exception:
+        print_security_error()
+        return
+
+    # 2. Reading and Importing
+    count = 0
+    skipped = 0
+    try:
+        with open(full_path, mode="r", encoding="utf-8") as f:
+            sample = f.read(1024)
+            f.seek(0)
+            if "service" not in sample or "password" not in sample:
+                console.print(
+                    "[bold red]Error:[/bold red] Incompatible CSV format. Use 'pyvault formatter' first."
+                )
+                return
+
+            reader = csv.DictReader(f)
+            for row in reader:
+                if storage.get_credential(row["service"]):
+                    skipped += 1
+                    continue
+
+                encrypted_blob = crypto.encrypt(row["password"], key)
+                storage.add_credential(row["service"], row["username"], encrypted_blob)
+                count += 1
+
+        console.print(
+            Panel(
+                f"[bold green]✔ Import from {os.path.basename(full_path)} complete![/bold green]\n"
+                f"Imported: {count}\nSkipped (duplicates): {skipped}",
+                border_style="green",
+                expand=False,
+            )
+        )
+    except Exception as e:
+        console.print(f"[bold red]Import failed:[/bold red] {e}")
 
 
 if __name__ == "__main__":
