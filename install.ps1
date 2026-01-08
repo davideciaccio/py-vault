@@ -24,4 +24,4 @@ Write-Host "To make pyvault a global command on Windows:"
 Write-Host "1. Open the Start Menu, search Enviroments Variables"
 Write-Host "2. Edit your PATH variable"
 Write-Host "3. Add this folder: $PSScriptRoot\venv\Scripts" -ForegroundColor Yellow
-Write-Host "------------------------------------------"
+Write-Host "------------------------------------------------"
