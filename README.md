@@ -1,94 +1,160 @@
-# 🛡️ Py-Vault
+# Py-Vault
+**The Security Password Manager from the Command Line.**
 
-**Py-Vault** is a professional-grade, zero-knowledge CLI password manager built with Python. It is designed for users who prioritize extreme privacy and require defense against modern attack vectors, including HID injection (Rubber Ducky) and automated keylogging.
+Py-Vault is a professional-grade CLI password manager built for users who value privacy, speed, and technical transparency. It utilizes standard encryption protocols and anti-automation protections to keep your data secure.
 
----
-
-## 🚀 Key Features
-
-* **Zero-Knowledge Architecture**: Your master password and salt never leave your local machine.
-* **Military-Grade Encryption**: Powered by **AES-256-GCM** for authenticated encryption and **Argon2id** for robust key derivation.
-* **Active Defense**:
-    * **Anti-HID Injection**: Real-time typing speed analysis to block automated hardware attacks.
-    * **Random Challenges**: Interactive verification steps to disrupt pre-programmed scripts.
-* **Professional CLI**: Built with `click` and `rich` for a beautiful, intuitive, and colored terminal experience.
-* **Cross-Platform**: Seamlessly runs on Linux, macOS, and Windows.
+![alt text](images/pyvault_v1.0.0.png)
 
 ---
 
-## 🛠️ Security Architecture
-
-Py-Vault doesn't just hide your data; it makes it mathematically inaccessible.
-
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **KDF** | Argon2id | Protects against brute-force and GPU-accelerated attacks. |
-| **Encryption** | AES-256-GCM | Ensures data confidentiality and tamper-proof integrity. |
-| **Storage** | Encrypted SQLite | ACID-compliant, high-performance local storage. |
-| **Layout** | **Src-Layout** | Ensures clean dependency management and secure module isolation. |
-
-
-
----
-
-## 📦 Installation Guide
-
-To avoid path conflicts and ensure all security modules are correctly resolved, Py-Vault must be installed in **editable mode** within a virtual environment.
-
-### 🐧 Linux & 🍎 macOS
-
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/davideciaccio/py-vault.git
-    cd py-vault
-    ```
-
-2.  **Create and activate a virtual environment**:
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    ```
-
-3.  **Install the package**:
-    The `-e` (editable) flag is **mandatory** to register the `pyvault` command and resolve internal module paths correctly:
-    ```bash
-    pip install -e .
-    ```
-
-4.  **Verify the installation**:
-    ```bash
-    pyvault --version
-    ```
-
-### 🪟 Windows - powershell
-
-1.  **Clone the repository**:
-    ```powershell
-    git clone https://github.com/davideciaccio/py-vault.git
-    cd py-vault
-    ```
-
-2.  **Setup Environment**:
-    ```powershell
-    python -m venv venv
-    .\venv\Scripts\activate
-    ```
-
-3.  **Install**:
-    ```powershell
-    pip install -e .
-    ```
+## Table of Contents
+1. [Key Features](#key-features)
+2. [Security Architecture](#security-architecture)
+3. [Getting Started](#getting-started)
+   - [Clone the Repository](#clone-the-repository)
+   - [Installation (Linux/macOS)](#installation-linux--macos)
+   - [Installation (Windows)](#installation-windows)
+4. [Quick Start Guide](#quick-start-guide)
+5. [Advanced Tools](#advanced-tools)
+   - [Data Migration](#data-migration)
+   - [Security Audit](#security-audit)
+   - [Emergency Wipe](#emergency-wipe)
+6. [Contributing](#contributing)
+7. [Disclaimer](#disclaimer)
+8. [License](#license)
 
 ---
 
-📄 License
-Distributed under the MIT License. See LICENSE for more information.
+## Key Features
+* **Zero-Knowledge Architecture:** Your Master Password is never stored; it is only used to derive encryption keys.
+* **Strong Encryption:** AES-256-GCM authenticated encryption for all vault data.
+* **Migration Toolkit:** Built-in formatter for Chrome, Edge, and Bitwarden exports.
+* **Security Audit:** Automated checks for weak, short, or reused passwords.
+* **Anti-Automation:** Typing speed analysis (Anti-Ducky) and interactive human verification.
+* **Emergency Wipe:** Instant, secure destruction of the local vault in case of compromise.
 
 ---
 
-⚠️ Disclaimer
-This tool is provided "as is" for educational and personal use. While it implements industry-standard cryptographic practices, the security of your data ultimately depends on the strength and secrecy of your Master Password.
+## Security Architecture
+Py-Vault implements a multi-layered defense strategy:
+
+* **Key Derivation:** Uses **Argon2id**, the winner of the Password Hashing Competition, to derive a 256-bit key from your Master Password using a unique salt.
+* **Data Encryption:** Employs **AES-256 in GCM mode**. This provides both confidentiality and **integrity**, ensuring that if the database is tampered with, the vault will refuse to decrypt.
+* **Physical Security:** Includes a human-verification challenge to prevent automated "Brute Force" or "Rubber Ducky" script attacks.
 
 ---
 
-Created with passion by davideciaccio
+## Getting Started
+
+### Clone the Repository
+First, clone the project to your local machine using Git:
+
+```bash
+git clone https://github.com/davideciaccio/py-vault.git
+cd py-vault
+```
+
+### Installation (Linux & macOS)
+The Linux installer sets up a virtual environment and creates a global wrapper in `/usr/local/bin`.
+
+1.  **Grant execution permissions:**
+```bash
+chmod +x install.sh
+```
+
+2.  **Run the installer:**
+```bash
+./install.sh
+```
+
+3.  **Usage:** Open a new terminal and run `pyvault`.
+
+### Installation (Windows)
+First, clone the project to your local machine using Git:
+
+```powershell
+git clone https://github.com/davideciaccio/py-vault.git
+cd py-vault
+```
+The Windows installer configures the environment and prepares the executable.
+
+1.  **Open PowerShell as Administrator** in the project folder.
+2.  **Run the installer:**
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\install.ps1
+```
+
+3.  **Global Access:** Add your `C:\path\to\py-vault\venv\Scripts` folder to your System Environment Variables (PATH).
+
+---
+
+## Quick Start Guide
+
+**1. Initialize your Vault**
+```bash
+pyvault init
+```
+
+**2. Add a new credential**
+```bash
+pyvault add github --username dev_user
+```
+
+**3. Retrieve a password (auto-copies to clipboard for 30s)**
+```bash
+pyvault get github
+```
+
+**4. List all services**
+```bash
+pyvault list
+```
+
+---
+
+## Advanced Tools
+
+### Data Migration
+Convert external exports into PyVault format and import them:
+
+```bash
+# 1. Format external CSV
+pyvault formatter "~/Downloads/chrome_passwords.csv" ~/Desktop ready.csv
+
+# 2. Import formatted file
+pyvault import ~/Desktop/ready.csv
+```
+
+### Security Audit
+Analyze your vault to identify security risks:
+
+```bash
+pyvault audit
+```
+
+### Emergency Wipe
+Instantly destroy all local data and the database:
+
+```bash
+pyvault wipe
+```
+
+---
+
+## Contributing
+Contributions are welcome! Please read the `CONTRIBUTING.md` for guidelines on how to submit security-related patches.
+
+---
+
+## Disclaimer
+This tool is provided "as is" for educational and personal use. While it implements standard cryptographic practices, the security of your data ultimately depends on the strength and secrecy of your Master Password.
+
+---
+
+## License
+This project is licensed under the **MIT License**.
+
+---
+
+Created by davideciaccio

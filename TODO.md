@@ -23,13 +23,13 @@ This document tracks the development progress of the Py-Vault password manager. 
 ## Phase 4: Distribution & Documentation
 - [x] **Project Structure**: Created `src/`, `tests/` folders and initialized Git repository.
 - [x] **License**: MIT License selected and added to the project.
-- [ ] **README.md**: Professional introduction, OS-specific guides, and detailed **Usage** section.
+- [x] **README.md**: Professional introduction, OS-specific guides, and detailed **Usage** section.
 - [X] **CONTRIBUTING.md**: Guidelines for Pull Requests and security vulnerability protocols.
-- [ ] **Install Scripts**: Finalize `install.sh` (Linux/macOS) and `install.ps1` (Windows).
+- [x] **Install Scripts**: Finalize `install.sh` (Linux/macOS) and `install.ps1` (Windows).
 
 ## Phase 5: Maintenance & Repository Security
 - [x] **Dependency Management**: Create `requirements.txt` and `requirements-dev.txt`.
 - [x] **Modern Packaging**: Configure `pyproject.toml` (PEP 517 compliance).
 - [x] **Pre-commit Hooks**: Setup hooks to prevent accidental commits of `.db` or `.env` files.
-- [ ] **Automated Updates**: Configure GitHub Dependabot for automated security patching.
-- [ ] **CI Pipeline**: Setup GitHub Actions for automated testing on every PR.
+- [x] **Automated Updates**: Configure GitHub Dependabot for automated security patching.
+- [x] **CI Pipeline**: Setup GitHub Actions for automated testing on every PR.

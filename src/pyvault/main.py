@@ -11,6 +11,7 @@ import csv
 from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
+from rich.align import Align
 
 # Local imports
 from pyvault.crypto import CryptoManager
@@ -46,8 +47,16 @@ def show_banner():
     ██║        ██║          ╚████╔╝ ██║  ██║╚██████╔╝███████╗   ██║
     ╚═╝        ╚═╝           ╚═══╝  ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝
     """
+    centered_banner = Align.center(banner)
+
     console.print(
-        Panel(banner, subtitle="Secure CLI Password Manager", style="bold blue")
+        Panel(
+            centered_banner,
+            subtitle="Secure CLI Password Manager",
+            subtitle_align="center",
+            style="bold blue",
+            expand=False,
+        )
     )
 
 
@@ -89,7 +98,7 @@ class MultiArgUsageCommand(click.Command):
 
 
 @click.group(cls=OrderedUsageGroup, invoke_without_command=True)
-@click.version_option(version="0.1.0-alpha", prog_name="Py-Vault")
+@click.version_option(version="1.0.0", prog_name="Py-Vault")
 @click.pass_context
 def cli(ctx):
     """Py-Vault: A zero-knowledge, cross-platform password manager."""
@@ -818,4 +827,4 @@ def import_cmd(file_path):
 
 
 if __name__ == "__main__":
-    cli()
+    cli(prog_name="pyvault")
