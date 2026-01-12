@@ -5,12 +5,13 @@ on:
     tags:
       - 'v*' # Si attiva solo quando crei un tag che inizia per v (es. v1.0.0)
 
+permissions:
+  contents: write
+  
 jobs:
   # JOB 1: Build the Windows Executable
   build-windows:
     runs-on: windows-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -40,6 +41,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/pyvault.exe
+          token: ${{ secrets.GITHUB_TOKEN }}
           body: |
             ## PyVault Release ${{ github.ref_name }}
 
