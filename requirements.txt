@@ -4,3 +4,4 @@ click==8.1.7
 rich==13.7.0
 questionary==2.0.1
 pyperclip==1.8.2
+platformdirs>=4.3.6
