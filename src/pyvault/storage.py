@@ -1,20 +1,43 @@
 import sqlite3
 from contextlib import contextmanager
+from pathlib import Path
+from platformdirs import user_data_dir
+
+# Application name used for system-specific data directories
+APP_NAME = "pyvault"
 
 
 class VaultStorage:
     """Handles all database interactions for PyVault with a unified schema."""
 
-    def __init__(self, db_path="vault.db"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        """
+        Initialize the storage.
+        If no db_path is provided, it uses the standard system data directory.
+        """
+        if db_path is None:
+            # Get the OS-specific data directory for 'pyvault'
+            # Windows: %LOCALAPPDATA%/pyvault/
+            # Linux: ~/.local/share/pyvault/
+            data_dir = Path(user_data_dir(APP_NAME, appauthor=False))
+
+            # Ensure the directory exists before attempting to create the database file
+            data_dir.mkdir(parents=True, exist_ok=True)
+            self.db_path = data_dir / "vault.db"
+        else:
+            # Allows passing a custom path (useful for testing)
+            self.db_path = Path(db_path)
+
         self._initialize_db()
-        # Manteniamo self.conn per compatibilità con i vecchi comandi che non usano ancora _connect
-        self.conn = sqlite3.connect(self.db_path)
+
+        # Keep a persistent connection for backward compatibility with older commands
+        self.conn = sqlite3.connect(str(self.db_path))
 
     @contextmanager
     def _connect(self):
         """Context manager for reliable database connections."""
-        conn = sqlite3.connect(self.db_path)
+        # Using str() for compatibility with older sqlite3 versions
+        conn = sqlite3.connect(str(self.db_path))
         try:
             yield conn
             conn.commit()
@@ -22,9 +45,9 @@ class VaultStorage:
             conn.close()
 
     def _initialize_db(self):
-        """Creates the necessary tables with the unified schema."""
+        """Creates the necessary tables if they do not exist."""
         with self._connect() as conn:
-            # Tabella di configurazione
+            # Configuration table for security parameters
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS config (
@@ -35,7 +58,7 @@ class VaultStorage:
             """
             )
 
-            # Tabella credenziali - Standard: password_blob
+            # Credentials table for storing encrypted secrets
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS credentials (
@@ -46,10 +69,10 @@ class VaultStorage:
             """
             )
 
-    # --- Master Data Management (Richiesti da 'init' e 'audit') ---
+    # --- Master Data Management ---
 
     def store_master_data(self, salt: bytes, verifier_blob: bytes):
-        """Stores the salt and verifier."""
+        """Stores the master salt and password verifier."""
         with self._connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO config (id, master_salt, master_verifier) VALUES (1, ?, ?)",
@@ -57,7 +80,7 @@ class VaultStorage:
             )
 
     def get_master_salt(self) -> bytes:
-        """Retrieves the master salt."""
+        """Retrieves the master salt used for key derivation."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT master_salt FROM config WHERE id = 1")
@@ -65,7 +88,7 @@ class VaultStorage:
             return result[0] if result else None
 
     def get_verifier(self) -> bytes:
-        """Retrieves the verifier blob."""
+        """Retrieves the verifier blob to check the master password."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT master_verifier FROM config WHERE id = 1")
@@ -75,7 +98,7 @@ class VaultStorage:
     # --- Credential Management ---
 
     def add_credential(self, service: str, username: str, password_blob: bytes):
-        """Stores or updates an encrypted credential."""
+        """Stores or updates an encrypted credential for a specific service."""
         with self._connect() as conn:
             conn.execute(
                 "INSERT OR REPLACE INTO credentials (service, username, password_blob) VALUES (?, ?, ?)",
@@ -83,7 +106,7 @@ class VaultStorage:
             )
 
     def get_credential(self, service: str):
-        """Fetches a specific credential."""
+        """Fetches the username and encrypted blob for a specific service."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -93,7 +116,7 @@ class VaultStorage:
             return cursor.fetchone()
 
     def get_all_credentials(self):
-        """Used by the 'list' command."""
+        """Returns a list of all stored services and their usernames."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -102,13 +125,13 @@ class VaultStorage:
             return cursor.fetchall()
 
     def get_full_inventory(self):
-        """Used by the 'audit' command."""
+        """Retrieves all stored data for auditing purposes."""
         with self._connect() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT service, username, password_blob FROM credentials")
             return cursor.fetchall()
 
     def delete_credential(self, service: str):
-        """Used by the 'rm' command."""
+        """Removes a credential from the vault."""
         with self._connect() as conn:
             conn.execute("DELETE FROM credentials WHERE service = ?", (service,))

@@ -1,15 +1,31 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "py-vault"
+name = "py-vault"  # Consider "pyvault-cli" if this name is taken on PyPI
 version = "1.0.0"
 description = "A zero-knowledge CLI password manager with anti-automation defenses."
 readme = "README.md"
 authors = [{ name = "davideciaccio", email = "dciaccio48@gmail.com" }]
 license = { text = "MIT" }
 requires-python = ">=3.8"
+keywords = ["password-manager", "security", "encryption", "cli", "zero-knowledge"]
+
+# Professional Indexing Classifiers
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Security :: Cryptography",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+
 dependencies = [
     "cryptography>=41.0.7",
     "argon2-cffi>=23.1.0",
@@ -17,9 +33,16 @@ dependencies = [
     "rich>=13.7.0",
     "questionary>=2.0.1",
     "pyperclip>=1.8.2",
+    "platformdirs>=4.3.6"
 ]
 
+[project.urls]
+"Homepage" = "https://github.com/davideciaccio/py-vault"
+"Bug Tracker" = "https://github.com/davideciaccio/py-vault/issues"
+"Source Code" = "https://github.com/davideciaccio/py-vault"
+
 [project.scripts]
+# Command = package.module:function
 pyvault = "pyvault.main:cli"
 
 [tool.setuptools.packages.find]
