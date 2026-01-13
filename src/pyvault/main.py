@@ -8,6 +8,7 @@ import pyperclip
 import threading
 import json
 import csv
+import importlib.metadata
 from rich.table import Table
 from rich.console import Console
 from rich.panel import Panel
@@ -94,11 +95,16 @@ class MultiArgUsageCommand(click.Command):
         formatter.write_usage(ctx.command_path, " ".join(pieces))
 
 
-# --- CLI CORE ---
+def get_version():
+    """Dynamically retrieves the version of the package."""
+    try:
+        return importlib.metadata.version("pyvault-cli")
+    except importlib.metadata.PackageNotFoundError:
+        return "0.0.0-dev"
 
 
 @click.group(cls=OrderedUsageGroup, invoke_without_command=True)
-@click.version_option(version="1.0.0", prog_name="Py-Vault")
+@click.version_option(version=get_version(), prog_name="Py-Vault")
 @click.pass_context
 def cli(ctx):
     """Py-Vault: A zero-knowledge, cross-platform password manager."""
