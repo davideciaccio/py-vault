@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyvault-cli"
-version = "1.0.2"
+version = "1.0.3"
 description = "A zero-knowledge CLI password manager with anti-automation defenses."
 readme = "README.md"
 authors = [{ name = "davideciaccio", email = "dciaccio48@gmail.com" }]
