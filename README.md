@@ -14,6 +14,7 @@ Py-Vault is a professional-grade CLI password manager built for users who value 
    - [Clone the Repository](#clone-the-repository)
    - [Installation (Linux/macOS)](#installation-linux--macos)
    - [Installation (Windows)](#installation-windows)
+   - [Installation (pip)](#installation-pip)
 4. [Quick Start Guide](#quick-start-guide)
 5. [Advanced Tools](#advanced-tools)
    - [Data Migration](#data-migration)
@@ -86,6 +87,19 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
 ```
 
 3.  **Global Access:** Add your `C:\path\to\py-vault\venv\Scripts` folder to your System Environment Variables (PATH).
+
+### Installation (pip)
+The easiest way to install Py-Vault is via pip, Python's package manager. This method works on Linux, macOS, and Windows.
+
+```bash
+pip install pyvault-cli
+```
+
+After installation, you can immediately start using Py-Vault from anywhere in your terminal:
+
+```bash
+pyvault init
+```
 
 ---
 
